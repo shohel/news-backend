@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 class FetchNewsController extends Controller
 {
 
-    public function getNews(){
+    public function getFromNewsAPI(){
         $newsAPIKey = env('NEWS_API');
         $newsAPIHttp = Http::withOptions(['verify' => false])->timeout(30)->get( "https://newsapi.org/v2/top-headlines?country=us&pageSize=30&apiKey={$newsAPIKey}");
 
@@ -41,6 +41,7 @@ class FetchNewsController extends Controller
                 'url_to_image' => $article['urlToImage'],
                 'content' => $article['content'],
                 'published_at' => Carbon::parse($article['publishedAt']),
+                'apiSource' => 'NewsAPI',
             ];
 
             /**
@@ -63,8 +64,6 @@ class FetchNewsController extends Controller
                 $newsData['raw_author'] = implode(',', $authors);
             }
 
-
-
             /**
              * Adding source
              */
@@ -77,7 +76,6 @@ class FetchNewsController extends Controller
 
             $source_model = Source::firstOrCreate(['source_slug' => $source_slug], ['source_slug' => $source_slug, 'source' => $source_name]);
             $newsData['source_id'] = $source_model->id;
-
 
             $news = News::query()->create($newsData);
             if ( count( $author_ids ) ) {

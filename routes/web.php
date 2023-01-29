@@ -18,4 +18,4 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('testAPI', [FetchNewsController::class, 'getNews']);
+Route::get('testAPI', [FetchNewsController::class, 'getFromNewsAPI']);

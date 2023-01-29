@@ -23,6 +23,7 @@ return new class extends Migration
             $table->text('url_to_image')->nullable();
             $table->text('description')->nullable()->fulltext();
             $table->text('content')->nullable()->fulltext();
+            $table->string('apiSource')->nullable();
             $table->timestamp('published_at');
             $table->timestamps();
         });
