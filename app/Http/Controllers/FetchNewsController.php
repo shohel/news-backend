@@ -23,6 +23,9 @@ class FetchNewsController extends Controller
             case 'Guardian':
                 $this->getFromGuardian();
                 break;
+            case 'NyTimes':
+                $this->getFromNyTimes();
+                break;
         }
 
     }
@@ -58,26 +61,6 @@ class FetchNewsController extends Controller
             ];
 
             /**
-             * Attaching authors
-             */
-            $author_ids = [];
-
-            if ( ! empty( $article['author'] ) ) {
-
-                $authors = explode(',',str_replace( '|' ,',', $article['author']));
-                //Removing empty value
-                $authors = array_filter($authors);
-
-                foreach ( $authors as $author ) {
-                    $author_slug = Str::slug($author);
-                    $author_model = Author::firstOrCreate(['author_slug' => $author_slug], ['author_slug' => $author_slug, 'author_name' => $author]);
-                    $author_ids[] = $author_model->id;
-                }
-
-                $newsData['raw_author'] = implode(',', $authors);
-            }
-
-            /**
              * Adding source
              */
 
@@ -88,12 +71,11 @@ class FetchNewsController extends Controller
             }
 
             $source_model = Source::firstOrCreate(['source_slug' => $source_slug], ['source_slug' => $source_slug, 'source' => $source_name]);
+
+            $newsData['raw_author'] = Arr::get($article, 'author');
             $newsData['source_id'] = $source_model->id;
 
-            $news = News::query()->create($newsData);
-            if ( count( $author_ids ) ) {
-                $news->author()->attach($author_ids);
-            }
+            $this->createNews($newsData);
         }
 
         return response()->json(['success' => true]);
@@ -141,37 +123,102 @@ class FetchNewsController extends Controller
                 'apiSource' => 'TheGuardian',
             ];
 
-            /**
-             * Attaching authors
-             */
-            $author_ids = [];
-
-            $byLineAuthors = Arr::get($article, 'fields.byline');
-            if ( ! empty( $byLineAuthors ) ) {
-                $authors = str_replace( ['(and)', '(earlier)'], '', $byLineAuthors );
-                $authors = explode(',',str_replace( ['|', 'and', ';'] ,',', $authors));
-                //Removing empty value
-                $authors = array_filter($authors);
-
-                foreach ( $authors as $author ) {
-                    $author_slug = Str::slug($author);
-                    $author_model = Author::firstOrCreate(['author_slug' => $author_slug], ['author_slug' => $author_slug, 'author_name' => $author]);
-                    $author_ids[] = $author_model->id;
-                }
-
-                $newsData['raw_author'] = $byLineAuthors;
-            }
-
+            $newsData['raw_author'] = Arr::get($article, 'fields.byline');
             $newsData['source_id'] = $source_model->id;
 
-            $news = News::query()->create($newsData);
-            if ( count( $author_ids ) ) {
-                $news->author()->attach($author_ids);
-            }
+            $this->createNews($newsData);
         }
 
         return response()->json(['success' => true]);
 
+    }
+
+    public function getFromNyTimes(){
+        $apiKey = env('NYTIMES');
+        $nyTimesAPIHttp = Http::withOptions(['verify' => false])->timeout(30)->get( "https://api.nytimes.com/svc/search/v2/articlesearch.json", [
+            'api-key' => $apiKey,
+        ]);
+
+        if ( ! $nyTimesAPIHttp->ok() ) {
+            return false;
+        }
+
+        $results = json_decode($nyTimesAPIHttp->body(), true);
+
+        //dd($results);
+
+        $source_name = 'The New York Times';
+        $source_slug = Str::slug($source_name);
+        $source_model = Source::firstOrCreate(
+            ['source_slug' => $source_slug],
+            ['source_slug' => $source_slug, 'source' => $source_name]
+        );
+
+        foreach ( $results['response']['docs'] as $article ) {
+            $article_url = $article['web_url'];
+
+            //Checking duplicate entries.
+            $found_duplicate = News::query()->select('id')->where('url', $article_url)->first();
+            if ( $found_duplicate ) {
+                continue;
+            }
+
+            $title = Arr::get($article, 'headline.main');
+            $description = Arr::get($article, 'abstract');
+            $thumbnail = '';
+            if (!empty($article['multimedia'])) {
+                foreach ($article['multimedia'] as $media) {
+                    if ( Arr::get($media, 'format') === 'thumbnail') {
+                        $thumbnail = $media['url'];
+                        break;
+                    }
+                }
+            }
+
+            $newsData = [
+                'title' => $title,
+                'slug' => Str::slug($title),
+                'description' => $description,
+                'url' => $article_url,
+                'url_to_image' => $thumbnail,
+                'published_at' => Carbon::parse($article['pub_date']),
+                'apiSource' => 'NyTimes',
+            ];
+
+            $newsData['raw_author'] = Arr::get($article, 'byline.original');
+            $newsData['source_id'] = $source_model->id;
+
+            $this->createNews( $newsData );
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    public function createNews($newsData, $params = []){
+        /**
+         * Attaching authors
+         */
+        $author_ids = [];
+
+        $raw_author = Arr::get($newsData, 'raw_author');
+        if ( ! empty( $raw_author ) ) {
+            $authors = str_replace( ['(and)', '(earlier)'], '', $raw_author );
+            $authors = explode(',',str_replace( ['|', 'and', ';'] ,',', $authors));
+            //Removing empty value
+            $authors = array_filter($authors);
+
+            foreach ( $authors as $author ) {
+                $author_slug = Str::slug($author);
+                $author_model = Author::firstOrCreate(['author_slug' => $author_slug], ['author_slug' => $author_slug, 'author_name' => $author]);
+                $author_ids[] = $author_model->id;
+            }
+        }
+
+
+        $news = News::query()->create($newsData);
+        if ( count( $author_ids ) ) {
+            $news->author()->attach($author_ids);
+        }
     }
 
 }

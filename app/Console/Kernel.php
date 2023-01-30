@@ -23,14 +23,8 @@ class Kernel extends ConsoleKernel
          */
         $schedule->call(function() {
             (new FetchNewsController())->getFromNewsAPI();
-        })->everyFiveMinutes();
-
-        /**
-         * Get from The Guardian
-         */
-
-        $schedule->call(function(){
             (new FetchNewsController())->getFromGuardian();
+            (new FetchNewsController())->getFromNyTimes();
         })->everyFiveMinutes();
     }
 
