@@ -100,7 +100,78 @@ class FetchNewsController extends Controller
     }
 
     public function getFromGuardian(){
-        //
+        $apiKey = env('THE_GUARDIAN_API');
+        $guardianAPIHttp = Http::withOptions(['verify' => false])->timeout(30)->get( "https://content.guardianapis.com/search", [
+            'api-key' => $apiKey,
+            'show-fields' => 'thumbnail,byline,trailText,headline',
+            'page-size' => 30,
+        ]);
+
+        if ( ! $guardianAPIHttp->ok() ) {
+            return false;
+        }
+
+        $results = json_decode($guardianAPIHttp->body(), true);
+
+        /**
+         * Getting Source model, for this API, it's The Guardian
+         */
+        $source_model = Source::firstOrCreate(['source_slug' => 'the-guardian'], ['source_slug' => 'the-guardian', 'source' => 'The Guardian']);
+
+        foreach ( $results['response']['results'] as $article ) {
+            $article_url = $article['webUrl'];
+
+            //Checking duplicate entries.
+            $found_duplicate = News::query()->select('id')->where('url', $article_url)->first();
+            if ( $found_duplicate ) {
+                continue;
+            }
+
+            $title = Arr::get($article, 'fields.headline');
+            $description = Arr::get($article, 'fields.trailText');
+            $thumbnail = Arr::get($article, 'fields.thumbnail');
+
+            $newsData = [
+                'title' => $title,
+                'slug' => Str::slug($title),
+                'description' => $description,
+                'url' => $article_url,
+                'url_to_image' => $thumbnail,
+                'published_at' => Carbon::parse($article['webPublicationDate']),
+                'apiSource' => 'TheGuardian',
+            ];
+
+            /**
+             * Attaching authors
+             */
+            $author_ids = [];
+
+            $byLineAuthors = Arr::get($article, 'fields.byline');
+            if ( ! empty( $byLineAuthors ) ) {
+                $authors = str_replace( ['(and)', '(earlier)'], '', $byLineAuthors );
+                $authors = explode(',',str_replace( ['|', 'and', ';'] ,',', $authors));
+                //Removing empty value
+                $authors = array_filter($authors);
+
+                foreach ( $authors as $author ) {
+                    $author_slug = Str::slug($author);
+                    $author_model = Author::firstOrCreate(['author_slug' => $author_slug], ['author_slug' => $author_slug, 'author_name' => $author]);
+                    $author_ids[] = $author_model->id;
+                }
+
+                $newsData['raw_author'] = $byLineAuthors;
+            }
+
+            $newsData['source_id'] = $source_model->id;
+
+            $news = News::query()->create($newsData);
+            if ( count( $author_ids ) ) {
+                $news->author()->attach($author_ids);
+            }
+        }
+
+        return response()->json(['success' => true]);
+
     }
 
 }

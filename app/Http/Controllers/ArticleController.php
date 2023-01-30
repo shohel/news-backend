@@ -11,7 +11,7 @@ class ArticleController extends Controller
     public function getArticles(Request $request){
         $user = Auth::user();
 
-        $articles = News::query()->with('source')->orderBy('published_at', 'asc')
+        $articles = News::query()->with('source')->orderBy('published_at', 'desc')
             ->paginate(10, ['*'], 'page');
 
 

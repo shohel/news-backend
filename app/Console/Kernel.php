@@ -18,8 +18,19 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->hourly();
 
+        /**
+         * Get from NewsAPI in background
+         */
         $schedule->call(function() {
             (new FetchNewsController())->getFromNewsAPI();
+        })->everyFiveMinutes();
+
+        /**
+         * Get from The Guardian
+         */
+
+        $schedule->call(function(){
+            (new FetchNewsController())->getFromGuardian();
         })->everyFiveMinutes();
     }
 
