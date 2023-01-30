@@ -14,6 +14,19 @@ use Illuminate\Support\Str;
 class FetchNewsController extends Controller
 {
 
+    public function testGetNews($source = ''){
+        switch ( $source ) {
+            case 'NewsAPI':
+                $this->getFromNewsAPI();
+                break;
+
+            case 'Guardian':
+                $this->getFromGuardian();
+                break;
+        }
+
+    }
+
     public function getFromNewsAPI(){
         $newsAPIKey = env('NEWS_API');
         $newsAPIHttp = Http::withOptions(['verify' => false])->timeout(30)->get( "https://newsapi.org/v2/top-headlines?country=us&pageSize=30&apiKey={$newsAPIKey}");
@@ -84,7 +97,10 @@ class FetchNewsController extends Controller
         }
 
         return response()->json(['success' => true]);
+    }
 
+    public function getFromGuardian(){
+        //
     }
 
 }
