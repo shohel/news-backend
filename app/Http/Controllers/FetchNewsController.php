@@ -194,7 +194,13 @@ class FetchNewsController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function createNews($newsData, $params = []){
+    /**
+     * It will run within Foreach Loop
+     *
+     * @param $newsData
+     * @return void
+     */
+    public function createNews($newsData){
         /**
          * Attaching authors
          */
