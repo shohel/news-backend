@@ -127,4 +127,11 @@ class AuthController extends Controller
     }
 
 
+    public function webLogin(Request $request){
+        if ( $request->expectsJson() ) {
+            return ['success' => false];
+        }
+
+    }
+
 }

@@ -19,3 +19,5 @@ Route::get('/', function () {
 });
 
 Route::get('testAPI/{apiSource}', [FetchNewsController::class, 'testGetNews']);
+
+Route::get('login', [\App\Http\Controllers\Api\AuthController::class, 'webLogin'])->name('login');

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\PreferencesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -28,6 +29,11 @@ Route::group(['middleware' => 'auth.if.has.token'], function () {
 
 
 Route::group(['middleware' => 'auth:sanctum'], function () {
+
+    Route::get('/preferences', [PreferencesController::class, 'getPreferencesPageResources']);
+    Route::post('/preferences', [PreferencesController::class, 'savePreferences']);
+
+
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
