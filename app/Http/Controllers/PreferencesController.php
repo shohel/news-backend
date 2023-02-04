@@ -6,6 +6,7 @@ use App\Models\Author;
 use App\Models\Source;
 use App\Models\UserMeta;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 
 class PreferencesController extends Controller
@@ -29,19 +30,32 @@ class PreferencesController extends Controller
             return Source::orderBy('source', 'asc')->get();
         });
 
+        $preference = $request->user()->preference;
+
         return response()->json([
             'status' => true,
             'results' => [
                 'authors' => $authors,
                 'sources' => $sources,
+                'preference' => $preference ? $preference : '{}',
             ]
         ]);
     }
 
     public function savePreferences( Request $request ){
+        $fields = $request->all();
+
+        if ( ! is_array( Arr::get( $fields, 'authors' ) ) ) {
+            $fields['authors'] = [];
+        }
+
+        if ( ! is_array( Arr::get( $fields, 'sources' ) ) ) {
+            $fields['sources'] = [];
+        }
+
         UserMeta::query()->updateOrCreate(
             [ 'user_id' => $request->user()->id, 'meta_key' => 'preference' ],
-            [ 'meta_value' => json_encode($request->all()) ],
+            [ 'meta_value' => json_encode($fields) ],
         );
 
         return response()->json([

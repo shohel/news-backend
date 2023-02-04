@@ -45,4 +45,8 @@ class User extends Authenticatable
     public function meta(){
         return $this->hasMany(UserMeta::class, 'user_id');
     }
+
+    public function getPreferenceAttribute(){
+        return $this->meta()->select('meta_value')->where(['meta_key' => 'preference'])->first()->value('meta_value');
+    }
 }
