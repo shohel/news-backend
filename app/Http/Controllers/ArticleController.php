@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Author;
 use App\Models\News;
+use App\Models\Source;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class ArticleController extends Controller
 {
@@ -43,4 +46,36 @@ class ArticleController extends Controller
             'results' => $articles
         ]);
     }
+
+    public function filterableFields( Request $request ){
+        $authors = Author::query();
+        if ( $request->user() ) {
+            $author_ids = $request->user()->preferred_author_ids;
+
+            if ( is_array( $author_ids ) && count($author_ids) ) {
+                $authors = $authors->whereIn('id', $author_ids);
+            }
+        }
+        $authors = $authors->orderBy('author_name', 'asc')->get();
+
+        $sources = Source::query();
+        if ( $request->user() ) {
+            $source_ids = $request->user()->preferred_source_ids;
+
+            if ( is_array( $source_ids ) && count($source_ids) ) {
+                $sources = $sources->whereIn('id', $source_ids);
+            }
+        }
+        $sources = $sources->orderBy('source', 'asc')->get();
+
+        return response()->json([
+            'status' => true,
+            'results' => [
+                'authors' => $authors,
+                'sources' => $sources,
+            ]
+        ]);
+    }
+
+
 }

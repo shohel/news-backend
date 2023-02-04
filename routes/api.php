@@ -24,6 +24,7 @@ Route::post('/logout', [AuthController::class, 'logOut']);
 Route::group(['middleware' => 'auth.if.has.token'], function () {
 
     Route::get('/getArticles', [ArticleController::class, 'getArticles']);
+    Route::get('/filterableFields', [ArticleController::class, 'filterableFields']);
 
 });
 

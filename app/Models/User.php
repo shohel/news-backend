@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Arr;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -47,6 +48,21 @@ class User extends Authenticatable
     }
 
     public function getPreferenceAttribute(){
-        return $this->meta()->select('meta_value')->where(['meta_key' => 'preference'])->first()->value('meta_value');
+        $result = $this->meta()->select('meta_value')->where(['meta_key' => 'preference'])->first();
+
+        if ( $result ) {
+            return $result->value('meta_value');
+        }
+
+        return '{}';
     }
+
+    public function getPreferredAuthorIdsAttribute(){
+        return (array) Arr::get(json_decode($this->preference, true), 'authors');
+    }
+
+    public function getPreferredSourceIdsAttribute(){
+        return (array) Arr::get(json_decode($this->preference, true), 'sources');
+    }
+
 }
