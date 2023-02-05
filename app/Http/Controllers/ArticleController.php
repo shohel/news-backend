@@ -9,12 +9,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class ArticleController extends Controller
 {
     public function getArticles(Request $request){
 
         $articles = News::query();
+        $authors = array_filter(explode(',', $request->authors));
+        $sources = array_filter(explode(',', $request->sources));
 
         if ( Auth::check() ) {
             $preference = json_decode($request->user()->preference, true);
@@ -36,10 +39,21 @@ class ArticleController extends Controller
 
         }
 
+        if ( count( $authors ) ) {
+            $articles = $articles->whereHas('author', function ($query) use ($authors) {
+                $query->whereIn('authors.id', $authors);
+            });
+        }
+
+        if ( count( $sources ) ) {
+            $articles = $articles->whereHas('source', function ($query) use ($sources) {
+                $query->whereIn('sources.id', $sources);
+            });
+        }
+
 
         $articles = $articles->with('source')->orderBy('published_at', 'desc')
-            ->paginate(10, ['*'], 'page');
-
+            ->simplePaginate(10, ['*'], 'page');
 
         return response()->json([
             'status' => true,
@@ -47,7 +61,7 @@ class ArticleController extends Controller
         ]);
     }
 
-    public function filterableFields( Request $request ){
+    public function getAuthors( Request $request ){
         $authors = Author::query();
         if ( $request->user() ) {
             $author_ids = $request->user()->preferred_author_ids;
@@ -56,8 +70,19 @@ class ArticleController extends Controller
                 $authors = $authors->whereIn('id', $author_ids);
             }
         }
-        $authors = $authors->orderBy('author_name', 'asc')->get();
+        if ( ! empty( $request->search ) ) {
+            $authors = $authors->where( 'author_name', 'LIKE', "%{$request->search}%" );
+        }
+        $authors = $authors->orderBy('author_name')->simplePaginate(10, ['*']);
 
+        return response()->json([
+            'status' => true,
+            'results' => $authors
+        ]);
+    }
+
+
+    public function getSources( Request $request ){
         $sources = Source::query();
         if ( $request->user() ) {
             $source_ids = $request->user()->preferred_source_ids;
@@ -66,14 +91,14 @@ class ArticleController extends Controller
                 $sources = $sources->whereIn('id', $source_ids);
             }
         }
-        $sources = $sources->orderBy('source', 'asc')->get();
+        if ( ! empty( $request->search ) ) {
+            $sources = $sources->where( 'source', 'LIKE', "%{$request->search}%" );
+        }
+        $sources = $sources->orderBy('source')->simplePaginate(10, ['*'], 'page');;
 
         return response()->json([
             'status' => true,
-            'results' => [
-                'authors' => $authors,
-                'sources' => $sources,
-            ]
+            'results' => $sources
         ]);
     }
 
