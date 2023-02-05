@@ -8,16 +8,20 @@ use App\Models\Source;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 
 class ArticleController extends Controller
 {
     public function getArticles(Request $request){
 
         $articles = News::query();
+        $search = $request->search;
         $authors = array_filter(explode(',', $request->authors));
         $sources = array_filter(explode(',', $request->sources));
+
+        if ( ! empty( $search ) ) {
+            $articles = $articles->where( 'title', 'LIKE', "%{$search}%" )
+                ->orWhere('description', 'LIKE', "%{$search}%");
+        }
 
         if ( Auth::check() ) {
             $preference = json_decode($request->user()->preference, true);
@@ -52,12 +56,12 @@ class ArticleController extends Controller
         }
 
 
-        $articles = $articles->with('source')->orderBy('published_at', 'desc')
-            ->simplePaginate(10, ['*'], 'page');
+        $results = $articles->with('source')->orderBy('published_at', 'desc')
+            ->paginate(10, ['*'], 'page');
 
         return response()->json([
             'status' => true,
-            'results' => $articles
+            'results' => $results,
         ]);
     }
 
