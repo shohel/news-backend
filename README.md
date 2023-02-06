@@ -4,6 +4,7 @@ This is a news backend project that will collect news from various sources and s
 
 - Clone it `git@github.com:shohel/news-backend.git`
 - Change path tho this project root from the terminal `cd /path/to/news-backend`
+- Copy `.env-prod` to `.env`, it's containing API KEY, update the DB connection details.
 - Install it by composer `composer install`
 - Migrate the Database `php artisan migrate`
 - Seed default user `php artisan db:seed`
