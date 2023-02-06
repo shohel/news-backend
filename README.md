@@ -1,5 +1,4 @@
-
-[![Watch the video](https://img.youtube.com/vi/AXFochV8XyY/0.jpg)](https://youtu.be/T-D1KVIuvjA)
+<center><b><a href="https://youtu.be/AXFochV8XyY" target="_blank">Watch Demo and Overview</a></b></center>
 
 ## Installation
 
