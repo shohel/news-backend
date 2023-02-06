@@ -1,0 +1,30 @@
+version: '3'
+
+networks:
+    laravel:
+
+services:
+    mysql:
+        image: mysql:8.0
+        restart: always
+        environment:
+            MYSQL_DATABASE: homestead
+            MYSQL_USER: homestead
+            MYSQL_PASSWORD: secret
+            MYSQL_ROOT_PASSWORD: secret
+            SERVICE_NAME: mysql
+        ports:
+            - "3306:3306"
+    web:
+        build: .
+        ports:
+            - 8000:80
+        links:
+            - mysql
+        environment:
+            DB_HOST: mysql
+            DB_DATABASE: homestead
+            DB_USERNAME: homestead
+            DB_PASSWORD: secret
+        depends_on:
+            - mysql
