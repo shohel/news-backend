@@ -5,7 +5,7 @@ This is a news backend project that will collect news from various sources and s
 - Clone it `git@github.com:shohel/news-backend.git`
 - Change path tho this project root from the terminal `cd /path/to/news-backend`
 - Install it by composer `composer install`
-- Migrate Database `php artisan migrate`
+- Migrate the Database `php artisan migrate`
 - Seed default user `php artisan db:seed`
 - Run the schedule to get news `php artisan schedule:work` It will continuously retrieve news every 5 minutes. However, if you don't want to wait, you can directly import the database from `sql/local.sql` file
 
